@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Renunber - Memory Challenge</title>
+    <title>Renumber - Memory Challenge</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -54,12 +54,15 @@
     <div id="game-container" class="glass-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-8 space-y-8 relative">
         
         <!-- Header -->
-        <div class="flex justify-between items-center text-sm font-semibold text-slate-500 uppercase tracking-wider">
+        <div class="flex justify-between items-start text-sm font-semibold text-slate-500 uppercase tracking-wider">
             <div class="flex flex-col">
                 <span>Score: <span id="display-score" class="text-blue-600 font-bold">0</span></span>
                 <span class="text-[10px]">Best: <span id="display-high-score">0</span></span>
             </div>
-            <div id="level-indicator" class="bg-slate-100 px-3 py-1 rounded-full text-blue-600 font-bold">Level 1</div>
+            <div id="level-container" class="text-right flex flex-col items-end gap-1">
+                <div id="level-indicator" class="bg-slate-100 px-3 py-1 rounded-full text-blue-600 font-bold text-xs">Level 1</div>
+                <div id="difficulty-text" class="text-[10px] font-bold text-slate-400 normal-case">Tutorial (3 digits)</div>
+            </div>
         </div>
 
         <!-- Start Screen -->
@@ -69,10 +72,16 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
             </div>
-            <h1 class="text-4xl font-extrabold text-slate-800 leading-tight" tabindex="-1">Renunber</h1>
-            <p class="text-slate-600 text-sm leading-relaxed">
-                Welcome to remember the numbers or Renunber. In each level you will be given a sequence of numbers that will vanish. Afterwards, you have to type the sequence in. If you get the sequence correct, you will move on to the next level. The game will progressively get more difficult as you progress and the number of digits will increase gradually.
-            </p>
+            <h1 class="text-4xl font-extrabold text-slate-800 leading-tight" tabindex="-1">Renumber</h1>
+            <div class="text-slate-600 text-sm leading-relaxed text-left space-y-3 px-2">
+                <p class="font-semibold text-center text-base">Welcome to remember the number or Renumber. Here’s how to play:</p>
+                <ul class="space-y-2 list-none">
+                    <li><span class="font-bold text-blue-600">• Memorize:</span> A sequence of numbers will appear and then vanish.</li>
+                    <li><span class="font-bold text-blue-600">• Recall:</span> Type the numbers back in the correct order.</li>
+                    <li><span class="font-bold text-blue-600">• Level Up:</span> If you get it right, you move to the next level.</li>
+                </ul>
+                <p class="pt-2 text-center italic">As you go, the game gets harder by adding more digits to the sequence. Good luck!</p>
+            </div>
             <button onclick="Game.start()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all active:scale-95">
                 Start Game
             </button>
@@ -128,7 +137,7 @@
         const Game = {
             state: {
                 score: 0,
-                highScore: parseInt(localStorage.getItem('renunber-high-score')) || 0,
+                highScore: parseInt(localStorage.getItem('renumber-high-score')) || 0,
                 sequence: "",
                 level: 1,
                 lastResultWasSuccess: true,
@@ -144,6 +153,7 @@
                 score: document.getElementById('display-score'),
                 highScore: document.getElementById('display-high-score'),
                 levelIndicator: document.getElementById('level-indicator'),
+                difficultyText: document.getElementById('difficulty-text'),
                 numberDisplay: document.getElementById('number-display'),
                 inputArea: document.getElementById('input-area'),
                 userInput: document.getElementById('user-input'),
@@ -166,14 +176,54 @@
                 });
             },
 
-            calculateSequenceLength(level) {
-                if (level <= 3) return 3;               
-                if (level <= 7) return 4;               
-                if (level <= 11) return 5;              
-                if (level <= 16) return 6;              
-                if (level <= 21) return 7;              
-                if (level <= 26) return 8;              
-                return 9 + Math.floor((level - 27) / 5);
+            getDifficultyInfo(level) {
+                if (level <= 3) return { label: "Tutorial", digits: 3 };
+                if (level <= 7) return { label: "Casual", digits: 4 };
+                if (level <= 11) return { label: "Standard", digits: 5 };
+                if (level <= 15) return { label: "Advanced", digits: 6 };
+                if (level <= 19) return { label: "Extreme", digits: 7 };
+                if (level <= 23) return { label: "Wait, what?", digits: 8 };
+                const extraLevels = level - 23;
+                return { label: "Beyond Reality", digits: 8 + Math.floor(extraLevels / 5) };
+            },
+
+            getGameOverSnark(level) {
+                if (level >= 1 && level <= 3) {
+                    return "I’ve seen a goldfish with a better memory than this. Focus, human!";
+                } else if (level >= 4 && level <= 7) {
+                    return "Sequence lost. Did you try writing it on your hand? Actually, don't do that. That’s cheating.";
+                } else if (level >= 8 && level <= 11) {
+                    return "Your brain just took an unscheduled vacation. Hope the weather was nice!";
+                } else if (level >= 12 && level <= 15) {
+                    return "Processing Error. Your internal RAM is officially smoking. Let’s dial it back before we smell burning silicon.";
+                } else if (level >= 16 && level <= 19) {
+                    return "System Crash! You almost had it, but your brain decided to take an unscheduled coffee break. Rebooting memory banks...";
+                } else if (level >= 20 && level <= 23) {
+                    return "Error 404: Memory not found. Did you try turning your brain off and back on again?";
+                }
+                return "Incorrect. Your memory banks have reached their limit.";
+            },
+
+            getSuccessAnnouncement(finishedLevel) {
+                const score = this.state.score;
+                const nextLevel = finishedLevel + 1;
+                const nextDiff = this.getDifficultyInfo(nextLevel);
+                
+                const milestoneMessages = {
+                    3: "Not bad. You’ve officially surpassed the memory span of a goldfish. Next stop: remembering where you put your keys.",
+                    7: "Look at you! You’re a natural. You remembered four whole numbers without calling your mom for help.",
+                    11: "Your brain is officially 'Standard Issue.' It’s like a 1998 calculator—reliable, slightly noisy, but it gets the job done.",
+                    15: "Check out the big brain on you! You’re starting to see the code in the Matrix, or at least a very blurry version of it.",
+                    19: "Seven digits? That’s a phone number. You just memorized a stranger's contact info. Please don't call them; just keep playing.",
+                    23: "You aren't playing the game; you are the game. Your neurons have officially achieved 'Arcade Legend' status. System over-heated."
+                };
+
+                // The period + space + capital "Your" creates a distinct pause in speech synthesis
+                if (milestoneMessages[finishedLevel]) {
+                    return `${milestoneMessages[finishedLevel]} Your score is ${score}. Next level is ${nextDiff.label} with ${nextDiff.digits} digits. Tap next to play next level.`;
+                }
+                
+                return `Correct, your score is ${score}. Tap next to proceed`;
             },
 
             showScreen(key, focusId) {
@@ -208,23 +258,31 @@
                 this.elements.inputArea.classList.add('hidden');
                 this.elements.memorizeArea.classList.remove('hidden');
                 this.elements.errorMsg.classList.add('hidden');
+                
+                const diffInfo = this.getDifficultyInfo(this.state.level);
                 this.elements.levelIndicator.innerText = `Level ${this.state.level}`;
+                this.elements.difficultyText.innerText = `${diffInfo.label} (${diffInfo.digits} digits)`;
                 
                 this.elements.numberDisplay.classList.remove('opacity-0');
                 this.elements.numberDisplay.innerText = "";
                 this.elements.userInput.value = "";
                 
-                const currentLen = this.calculateSequenceLength(this.state.level);
-                this.state.sequence = Array.from({length: currentLen}, 
+                this.state.sequence = Array.from({length: diffInfo.digits}, 
                     () => Math.floor(Math.random() * 10)).join('');
 
-                setTimeout(() => {
+                const announceSequence = () => {
                     this.elements.numberDisplay.innerText = this.state.sequence;
                     this.speak("The numbers are: " + this.state.sequence.split('').join(', '), () => {
                         this.hideNumbers();
                         this.switchToInput();
                     });
-                }, 400);
+                };
+
+                if (this.state.level === 1) {
+                    this.speak("Level 1: tutorial. Memorize and recall this 3-digit sequence.", announceSequence);
+                } else {
+                    setTimeout(announceSequence, 400);
+                }
             },
 
             hideNumbers() {
@@ -255,15 +313,15 @@
                     return;
                 }
 
-                // Cheat Code: 001
                 const isCorrect = (val === this.state.sequence) || (val === "001");
 
                 if (isCorrect) {
+                    const finishedLevel = this.state.level;
                     this.state.score += 10;
                     this.state.level++;
                     this.handleHighScore();
                     this.updateScoreUI();
-                    this.showResult(true);
+                    this.showResult(true, finishedLevel);
                 } else {
                     this.showResult(false);
                 }
@@ -272,7 +330,7 @@
             handleHighScore() {
                 if (this.state.score > this.state.highScore) {
                     this.state.highScore = this.state.score;
-                    localStorage.setItem('renunber-high-score', this.state.highScore);
+                    localStorage.setItem('renumber-high-score', this.state.highScore);
                 }
             },
 
@@ -281,29 +339,32 @@
                 this.elements.highScore.innerText = this.state.highScore;
             },
 
-            showResult(success) {
+            showResult(success, finishedLevel = 0) {
                 this.state.lastResultWasSuccess = success;
                 this.showScreen('result', 'result-header');
                 this.elements.sequenceReveal.innerText = this.state.sequence;
                 
                 if (success) {
+                    const successText = this.getSuccessAnnouncement(finishedLevel);
                     this.elements.resultHeader.innerText = "Correct!";
                     this.elements.resultMsg.innerText = `Level complete. Your score is ${this.state.score}.`;
                     this.elements.resultIcon.className = "mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-green-500 pulse-success";
                     this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>`;
                     this.elements.nextBtn.innerText = "Next Level";
                     
-                    this.speak(`Correct, your score is ${this.state.score}. Tap next to proceed`, () => {
+                    this.speak(successText, () => {
                         this.elements.nextBtn.focus();
                     });
                 } else {
+                    const snarkMessage = this.getGameOverSnark(this.state.level);
+                    
                     this.elements.resultHeader.innerText = "Game Over";
-                    this.elements.resultMsg.innerText = `Final Score: ${this.state.score}`;
+                    this.elements.resultMsg.innerText = snarkMessage;
                     this.elements.resultIcon.className = "mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-red-500";
                     this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>`;
                     this.elements.nextBtn.innerText = "Play Again";
                     
-                    this.speak("Incorrect. The sequence was " + this.state.sequence.split('').join(', '), () => {
+                    this.speak(`${snarkMessage} The sequence was ${this.state.sequence.split('').join(', ')}`, () => {
                         this.elements.nextBtn.focus();
                     });
                     
