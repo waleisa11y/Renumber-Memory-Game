@@ -417,10 +417,13 @@
                         this.elements.numberDisplay.setAttribute('aria-hidden', 'true');
                         this.speak("The numbers are: " + formattedSeq, completePhase);
                     } else {
+                        // When announcements are OFF, show digits separated by commas for screen reader clarity
                         this.elements.numberDisplay.innerText = formattedSeq;
                         this.elements.numberDisplay.setAttribute('aria-hidden', 'false');
                         this.elements.numberDisplay.setAttribute('aria-live', 'assertive');
-                        const transitionDelay = this.state.sequence.length * 250;
+                        
+                        // User Request: Wait 0.4 seconds per digit before switching to input
+                        const transitionDelay = this.state.sequence.length * 400;
                         setTimeout(completePhase, transitionDelay);
                     }
                 };
