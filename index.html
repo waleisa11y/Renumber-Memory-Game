@@ -12,6 +12,7 @@
             font-family: 'Inter', sans-serif;
             background: radial-gradient(circle at top left, #f8fafc, #e2e8f0);
             min-height: 100vh;
+            touch-action: manipulation;
         }
 
         .glass-card {
@@ -22,10 +23,8 @@
 
         .sr-only {
             position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
             overflow: hidden;
             clip: rect(0, 0, 0, 0);
             white-space: nowrap;
@@ -39,71 +38,146 @@
         }
         .pulse-success { animation: success-pulse 1s ease-out; }
 
+        @keyframes heaven-pulse {
+            0% { box-shadow: 0 0 20px 0px rgba(234, 179, 8, 0.5); transform: scale(1); }
+            50% { box-shadow: 0 0 40px 10px rgba(234, 179, 8, 0.8); transform: scale(1.05); }
+            100% { box-shadow: 0 0 20px 0px rgba(234, 179, 8, 0.5); transform: scale(1); }
+        }
+        .pulse-heaven { animation: heaven-pulse 2s infinite ease-in-out; }
+
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
         .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
+
+        .rate-btn[aria-pressed="true"] {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border-color: #1d4ed8;
+        }
+
+        .toggle-btn[aria-pressed="true"] {
+            background-color: #dbeafe;
+            color: #2563eb;
+            border-color: #bfdbfe;
+        }
+
+        #settings-accordion {
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-in;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center p-4">
 
+    <!-- Screen Reader Announcer -->
     <div id="sr-announcer" class="sr-only" aria-live="assertive"></div>
 
-    <div id="game-container" class="glass-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-8 space-y-8 relative">
+    <div id="game-container" class="glass-card w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-6 relative border border-white">
         
-        <!-- Header -->
-        <div class="flex justify-between items-start text-sm font-semibold text-slate-500 uppercase tracking-wider">
-            <div class="flex flex-col">
-                <span>Score: <span id="display-score" class="text-blue-600 font-bold">0</span></span>
-                <span class="text-[10px]">Best: <span id="display-high-score">0</span></span>
+        <!-- Persistent Header -->
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex flex-col text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                    <span>Score: <span id="display-score" class="text-blue-600 font-bold">0</span></span>
+                    <span class="text-[10px]">Best: <span id="display-high-score">0</span></span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button 
+                        id="audio-toggle-btn" 
+                        onclick="Game.toggleAnnouncements()" 
+                        aria-pressed="false"
+                        class="toggle-btn p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-all border border-transparent focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                        title="Toggle Announcements">
+                        <svg id="icon-audio-on" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                        <svg id="icon-audio-off" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                        </svg>
+                    </button>
+
+                    <button 
+                        id="settings-toggle" 
+                        onclick="Game.toggleSettings()" 
+                        aria-expanded="false" 
+                        aria-controls="settings-accordion"
+                        class="p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-all text-slate-600 focus:ring-2 focus:ring-blue-400 focus:outline-none disabled:opacity-20 border border-transparent"
+                        title="Speech Speed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+                </div>
             </div>
-            <div id="level-container" class="text-right flex flex-col items-end gap-1">
-                <div id="level-indicator" class="bg-slate-100 px-3 py-1 rounded-full text-blue-600 font-bold text-xs">Level 1</div>
-                <div id="difficulty-text" class="text-[10px] font-bold text-slate-400 normal-case">Tutorial (3 digits)</div>
+
+            <div id="level-status" class="flex justify-between items-center bg-slate-50/50 p-2 rounded-xl">
+                <div id="level-indicator" class="bg-white px-3 py-1 rounded-lg text-blue-600 font-extrabold text-xs shadow-sm">Level 1</div>
+                <div id="difficulty-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Tutorial (3 digits)</div>
+            </div>
+        </div>
+
+        <!-- Settings Content -->
+        <div id="settings-accordion" class="max-h-0 opacity-0 bg-slate-100 rounded-2xl border border-slate-200 hidden" role="region" aria-label="Speech Speed Settings">
+            <div class="p-4 space-y-4">
+                <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Speech Rate</h2>
+                <div class="grid grid-cols-2 gap-2 bg-slate-200 p-1.5 rounded-xl">
+                    <button type="button" class="rate-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-rate="0.75" onclick="Game.updateRate(0.75)">Slow</button>
+                    <button type="button" class="rate-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-rate="1.0" onclick="Game.updateRate(1.0)">Normal</button>
+                    <button type="button" class="rate-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-rate="1.25" onclick="Game.updateRate(1.25)">Fast</button>
+                    <button type="button" class="rate-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-rate="1.5" onclick="Game.updateRate(1.5)">Faster</button>
+                    <button type="button" class="rate-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-rate="1.75" onclick="Game.updateRate(1.75)">Super Fast</button>
+                    <button type="button" class="rate-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-rate="2.0" onclick="Game.updateRate(2.0)">Speed Demon</button>
+                    <button type="button" class="rate-btn col-span-2 py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-rate="2.25" onclick="Game.updateRate(2.25)">What was that?</button>
+                </div>
             </div>
         </div>
 
         <!-- Start Screen -->
         <div id="start-screen" class="text-center space-y-6">
-            <div class="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
             </div>
-            <h1 class="text-4xl font-extrabold text-slate-800 leading-tight" tabindex="-1">Renumber</h1>
-            <div class="text-slate-600 text-sm leading-relaxed text-left space-y-3 px-2">
+            <h1 class="text-4xl font-extrabold text-slate-800" tabindex="-1">Renumber</h1>
+            
+            <div class="text-slate-600 text-sm leading-relaxed text-left space-y-4 px-2">
                 <p class="font-semibold text-center text-base">Welcome to remember the number or Renumber. Here’s how to play:</p>
-                <ul class="space-y-2 list-none">
+                <ul class="space-y-3 list-none">
                     <li><span class="font-bold text-blue-600">• Memorize:</span> A sequence of numbers will appear and then vanish.</li>
                     <li><span class="font-bold text-blue-600">• Recall:</span> Type the numbers back in the correct order.</li>
                     <li><span class="font-bold text-blue-600">• Level Up:</span> If you get it right, you move to the next level.</li>
                 </ul>
-                <p class="pt-2 text-center italic">As you go, the game gets harder by adding more digits to the sequence. Good luck!</p>
+                <p class="pt-2 text-center">As you go, the game gets harder by adding more digits to the sequence. Good luck!</p>
             </div>
-            <button onclick="Game.start()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all active:scale-95">
+
+            <button onclick="Game.start()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-all">
                 Start Game
             </button>
         </div>
 
         <!-- Game Screen -->
-        <div id="game-screen" class="hidden space-y-6">
-            <div id="memorize-area" class="py-8">
-                <div id="number-display" class="text-5xl font-black text-center text-slate-800 tracking-widest min-h-[4rem] transition-opacity duration-300" aria-hidden="true"></div>
+        <div id="game-screen" class="hidden space-y-6" onclick="Game.handleBackgroundTap(event)">
+            <div id="memorize-area" class="py-8 text-center">
+                <div id="number-display" class="text-5xl font-black text-slate-800 tracking-widest min-h-[4rem] transition-opacity duration-300" aria-hidden="true"></div>
             </div>
 
             <div id="input-area" class="hidden space-y-6">
                 <div class="relative">
-                    <label for="user-input" class="block text-center text-slate-600 font-semibold mb-2">Type the numbers you heard:</label>
-                    <input type="text" id="user-input" 
-                           inputmode="numeric" pattern="[0-9]*" autocomplete="off"
-                           placeholder="Enter digits..."
+                    <label for="user-input" class="block text-center text-slate-600 font-semibold mb-2">Type the sequence:</label>
+                    <input type="text" id="user-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
+                           placeholder="Digits..."
                            class="w-full text-center py-5 text-3xl font-bold border-4 border-slate-100 rounded-2xl focus:border-blue-400 focus:outline-none transition-colors">
-                    
                     <p id="error-message" class="hidden text-red-500 text-sm font-semibold mt-4 text-center animate-shake" role="alert"></p>
                 </div>
-                <button onclick="Game.check()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all">
+                <button id="submit-answer" onclick="Game.check()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg">
                     Submit Answer
                 </button>
             </div>
@@ -111,22 +185,18 @@
 
         <!-- Result Screen -->
         <div id="result-screen" class="hidden text-center space-y-6">
-            <div id="result-icon" class="mx-auto w-16 h-16 rounded-full flex items-center justify-center"></div>
-            <div>
-                <h2 id="result-header" class="text-2xl font-extrabold text-slate-800" tabindex="-1">Result</h2>
-                <p id="result-message" class="text-slate-600 mt-2 font-medium"></p>
-            </div>
-            
+            <div id="result-icon" class="mx-auto w-12 h-12 rounded-full flex items-center justify-center"></div>
+            <h2 id="result-header" class="text-2xl font-extrabold text-slate-800" tabindex="-1">Result</h2>
+            <p id="result-message" class="text-slate-600 mt-2 font-medium"></p>
             <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p class="text-xs uppercase font-bold text-slate-400 mb-1">The sequence was</p>
+                <p class="text-xs uppercase font-bold text-slate-400 mb-1">Sequence</p>
                 <p id="sequence-reveal" class="text-2xl font-bold text-slate-800 tracking-widest"></p>
             </div>
-
             <div class="flex gap-3">
                 <button id="next-round-btn" onclick="Game.handleAction()" class="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all shadow-md focus:ring-4 focus:ring-blue-300">
                     Next Level
                 </button>
-                <button onclick="Game.reset()" class="px-6 py-4 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl font-bold transition-all">
+                <button id="play-again-btn" onclick="Game.reset()" class="px-6 py-4 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl font-bold transition-all">
                     Menu
                 </button>
             </div>
@@ -138,9 +208,13 @@
             state: {
                 score: 0,
                 highScore: parseInt(localStorage.getItem('renumber-high-score')) || 0,
+                speechRate: parseFloat(localStorage.getItem('renumber-speech-rate')) || 1.0,
+                announcementsEnabled: localStorage.getItem('renumber-audio-enabled') === 'true',
                 sequence: "",
                 level: 1,
+                isSettingsOpen: false,
                 lastResultWasSuccess: true,
+                gameFinished: false,
                 synth: window.speechSynthesis
             },
 
@@ -163,17 +237,87 @@
                 resultIcon: document.getElementById('result-icon'),
                 sequenceReveal: document.getElementById('sequence-reveal'),
                 nextBtn: document.getElementById('next-round-btn'),
-                errorMsg: document.getElementById('error-message')
+                playAgainBtn: document.getElementById('play-again-btn'),
+                submitBtn: document.getElementById('submit-answer'),
+                errorMsg: document.getElementById('error-message'),
+                accordion: document.getElementById('settings-accordion'),
+                settingsToggle: document.getElementById('settings-toggle'),
+                audioToggleBtn: document.getElementById('audio-toggle-btn'),
+                iconAudioOn: document.getElementById('icon-audio-on'),
+                iconAudioOff: document.getElementById('icon-audio-off'),
+                srAnnouncer: document.getElementById('sr-announcer')
             },
 
             init() {
                 this.elements.highScore.innerText = this.state.highScore;
-                this.elements.userInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.check();
-                });
-                this.elements.userInput.addEventListener('input', () => {
-                    this.elements.errorMsg.classList.add('hidden');
-                });
+                this.updateRateUI();
+                this.updateAudioUI();
+
+                this.elements.userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.check(); });
+                this.elements.userInput.addEventListener('input', () => { this.elements.errorMsg.classList.add('hidden'); });
+            },
+
+            handleBackgroundTap(e) {
+                if (this.elements.inputArea.classList.contains('hidden')) return;
+                const isInteractive = e.target.closest('button') || e.target.closest('input');
+                if (!isInteractive) {
+                    this.elements.userInput.focus();
+                }
+            },
+
+            toggleAnnouncements() {
+                this.state.announcementsEnabled = !this.state.announcementsEnabled;
+                localStorage.setItem('renumber-audio-enabled', this.state.announcementsEnabled);
+                if (!this.state.announcementsEnabled && this.state.isSettingsOpen) this.toggleSettings(true);
+                this.updateAudioUI();
+                if (this.state.announcementsEnabled) this.speak("Announcements turned on.");
+                else { this.clearAnnouncer(); this.elements.srAnnouncer.innerText = "Announcements turned off."; }
+            },
+
+            updateAudioUI() {
+                const en = this.state.announcementsEnabled;
+                this.elements.audioToggleBtn.setAttribute('aria-pressed', en);
+                this.elements.iconAudioOn.classList.toggle('hidden', !en);
+                this.elements.iconAudioOff.classList.toggle('hidden', en);
+                this.elements.settingsToggle.disabled = !en;
+            },
+
+            toggleSettings(forceClose = null) {
+                if (forceClose === true) this.state.isSettingsOpen = false;
+                else if (forceClose === false) this.state.isSettingsOpen = true;
+                else this.state.isSettingsOpen = !this.state.isSettingsOpen;
+                
+                const isOpen = this.state.isSettingsOpen;
+                this.elements.settingsToggle.setAttribute('aria-expanded', isOpen);
+                
+                if (isOpen) {
+                    this.elements.accordion.classList.remove('hidden');
+                    setTimeout(() => {
+                        this.elements.accordion.style.maxHeight = this.elements.accordion.scrollHeight + "px";
+                        this.elements.accordion.style.opacity = "1";
+                        this.elements.accordion.setAttribute('aria-hidden', 'false');
+                        const active = this.elements.accordion.querySelector('[aria-pressed="true"]');
+                        if (active) active.focus();
+                    }, 10);
+                } else {
+                    this.elements.accordion.style.maxHeight = "0";
+                    this.elements.accordion.style.opacity = "0";
+                    this.elements.accordion.setAttribute('aria-hidden', 'true');
+                    setTimeout(() => { if (!this.state.isSettingsOpen) this.elements.accordion.classList.add('hidden'); }, 300);
+                    this.elements.settingsToggle.focus();
+                }
+            },
+
+            updateRate(val) {
+                this.state.speechRate = val;
+                localStorage.setItem('renumber-speech-rate', val);
+                this.updateRateUI();
+                this.toggleSettings(true);
+            },
+
+            updateRateUI() {
+                const btns = this.elements.accordion.querySelectorAll('.rate-btn');
+                btns.forEach(b => b.setAttribute('aria-pressed', parseFloat(b.dataset.rate) === this.state.speechRate));
             },
 
             getDifficultyInfo(level) {
@@ -183,25 +327,17 @@
                 if (level <= 15) return { label: "Advanced", digits: 6 };
                 if (level <= 19) return { label: "Extreme", digits: 7 };
                 if (level <= 23) return { label: "Wait, what?", digits: 8 };
-                const extraLevels = level - 23;
-                return { label: "Beyond Reality", digits: 8 + Math.floor(extraLevels / 5) };
+                if (level <= 25) return { label: "Beyond Reality", digits: 9 };
+                return { label: "Divine Realm", digits: 9 };
             },
 
             getGameOverSnark(level) {
-                if (level >= 1 && level <= 3) {
-                    return "I’ve seen a goldfish with a better memory than this. Focus, human!";
-                } else if (level >= 4 && level <= 7) {
-                    return "Sequence lost. Did you try writing it on your hand? Actually, don't do that. That’s cheating.";
-                } else if (level >= 8 && level <= 11) {
-                    return "Your brain just took an unscheduled vacation. Hope the weather was nice!";
-                } else if (level >= 12 && level <= 15) {
-                    return "Processing Error. Your internal RAM is officially smoking. Let’s dial it back before we smell burning silicon.";
-                } else if (level >= 16 && level <= 19) {
-                    return "System Crash! You almost had it, but your brain decided to take an unscheduled coffee break. Rebooting memory banks...";
-                } else if (level >= 20 && level <= 23) {
-                    return "Error 404: Memory not found. Did you try turning your brain off and back on again?";
-                }
-                return "Incorrect. Your memory banks have reached their limit.";
+                if (level <= 3) return "I’ve seen a goldfish with a better memory than this. Focus, human!";
+                if (level <= 7) return "Sequence lost. Did you try writing it on your hand? (Actually, don't do that. That’s cheating.)";
+                if (level <= 11) return "Your brain just took an unscheduled vacation. Hope the weather was nice!";
+                if (level <= 15) return "Processing Error. Your internal RAM is officially smoking. Let’s dial it back before we smell burning silicon.";
+                if (level <= 19) return "System Crash! You almost had it, but your brain decided to take an unscheduled coffee break. Rebooting memory banks...";
+                return "Error 404: Memory not found. Did you try turning your brain off and back on again?";
             },
 
             getSuccessAnnouncement(finishedLevel) {
@@ -209,51 +345,55 @@
                 const nextLevel = finishedLevel + 1;
                 const nextDiff = this.getDifficultyInfo(nextLevel);
                 
-                const milestoneMessages = {
+                const milestones = {
                     3: "Not bad. You’ve officially surpassed the memory span of a goldfish. Next stop: remembering where you put your keys.",
                     7: "Look at you! You’re a natural. You remembered four whole numbers without calling your mom for help.",
                     11: "Your brain is officially 'Standard Issue.' It’s like a 1998 calculator—reliable, slightly noisy, but it gets the job done.",
                     15: "Check out the big brain on you! You’re starting to see the code in the Matrix, or at least a very blurry version of it.",
-                    19: "Seven digits? That’s a phone number. You just memorized a stranger's contact info. Please don't call them; just keep playing.",
-                    23: "You aren't playing the game; you are the game. Your neurons have officially achieved 'Arcade Legend' status. System over-heated."
+                    19: "Seven digits? That’s a phone number. You just memorized a stranger's contact info. Please don't call them. Just keep playing.",
+                    23: "You aren't playing the game; you are the game. Your neurons have officially achieved 'Arcade Legend' status. System over-heated.",
+                    25: "Congratulations! You have ascended to heaven. Final Score: 250."
                 };
 
-                // The period + space + capital "Your" creates a distinct pause in speech synthesis
-                if (milestoneMessages[finishedLevel]) {
-                    return `${milestoneMessages[finishedLevel]} Your score is ${score}. Next level is ${nextDiff.label} with ${nextDiff.digits} digits. Tap next to play next level.`;
+                if (milestones[finishedLevel]) {
+                    if (finishedLevel === 25) return milestones[finishedLevel];
+                    return `${milestones[finishedLevel]} Score: ${score}. Next level is ${nextDiff.label} with ${nextDiff.digits} digits.`;
                 }
-                
                 return `Correct, your score is ${score}. Tap next to proceed`;
             },
 
+            clearAnnouncer() { this.elements.srAnnouncer.innerText = ""; },
+
             showScreen(key, focusId) {
-                Object.keys(this.elements.screens).forEach(k => {
-                    this.elements.screens[k].classList.toggle('hidden', k !== key);
-                });
-                if (focusId) {
-                    const el = document.getElementById(focusId);
-                    if (el) el.focus();
-                }
+                this.clearAnnouncer();
+                Object.keys(this.elements.screens).forEach(k => this.elements.screens[k].classList.toggle('hidden', k !== key));
+                if (focusId) { const el = document.getElementById(focusId); if (el) el.focus(); }
+                if (this.state.isSettingsOpen) this.toggleSettings(true);
             },
 
             speak(text, onComplete = null) {
-                this.state.synth.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 0.9;
-                utterance.onend = () => {
-                    if (onComplete) onComplete();
-                };
-                this.state.synth.speak(utterance);
+                if (this.state.announcementsEnabled) {
+                    this.state.synth.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = this.state.speechRate;
+                    utterance.onend = () => { if (onComplete) onComplete(); };
+                    this.state.synth.speak(utterance);
+                } else {
+                    this.elements.srAnnouncer.innerText = text;
+                    if (onComplete) setTimeout(onComplete, 100); 
+                }
             },
 
             start() {
                 this.state.score = 0;
                 this.state.level = 1;
+                this.state.gameFinished = false;
                 this.updateScoreUI();
                 this.nextRound();
             },
 
             nextRound() {
+                this.clearAnnouncer();
                 this.showScreen('game');
                 this.elements.inputArea.classList.add('hidden');
                 this.elements.memorizeArea.classList.remove('hidden');
@@ -262,66 +402,66 @@
                 const diffInfo = this.getDifficultyInfo(this.state.level);
                 this.elements.levelIndicator.innerText = `Level ${this.state.level}`;
                 this.elements.difficultyText.innerText = `${diffInfo.label} (${diffInfo.digits} digits)`;
-                
                 this.elements.numberDisplay.classList.remove('opacity-0');
                 this.elements.numberDisplay.innerText = "";
                 this.elements.userInput.value = "";
                 
-                this.state.sequence = Array.from({length: diffInfo.digits}, 
-                    () => Math.floor(Math.random() * 10)).join('');
+                this.state.sequence = Array.from({length: diffInfo.digits}, () => Math.floor(Math.random() * 10)).join('');
+                const formattedSeq = this.state.sequence.split('').join(', ');
 
-                const announceSequence = () => {
-                    this.elements.numberDisplay.innerText = this.state.sequence;
-                    this.speak("The numbers are: " + this.state.sequence.split('').join(', '), () => {
-                        this.hideNumbers();
-                        this.switchToInput();
-                    });
+                const completePhase = () => { this.hideNumbers(); this.switchToInput(); };
+
+                const startDisplay = () => {
+                    if (this.state.announcementsEnabled) {
+                        this.elements.numberDisplay.innerText = this.state.sequence;
+                        this.elements.numberDisplay.setAttribute('aria-hidden', 'true');
+                        this.speak("The numbers are: " + formattedSeq, completePhase);
+                    } else {
+                        this.elements.numberDisplay.innerText = formattedSeq;
+                        this.elements.numberDisplay.setAttribute('aria-hidden', 'false');
+                        this.elements.numberDisplay.setAttribute('aria-live', 'assertive');
+                        const transitionDelay = this.state.sequence.length * 250;
+                        setTimeout(completePhase, transitionDelay);
+                    }
                 };
 
                 if (this.state.level === 1) {
-                    this.speak("Level 1: tutorial. Memorize and recall this 3-digit sequence.", announceSequence);
+                    this.speak("Level 1: tutorial. Memorize and recall this 3-digit sequence.", startDisplay);
                 } else {
-                    setTimeout(announceSequence, 400);
+                    setTimeout(startDisplay, 400);
                 }
             },
 
             hideNumbers() {
                 this.elements.numberDisplay.classList.add('opacity-0');
-                setTimeout(() => {
-                    if (this.elements.numberDisplay.classList.contains('opacity-0')) {
-                        this.elements.numberDisplay.innerText = "";
-                    }
-                }, 300);
+                this.elements.numberDisplay.setAttribute('aria-hidden', 'true');
+                this.elements.numberDisplay.removeAttribute('aria-live');
             },
 
             switchToInput() {
                 this.elements.memorizeArea.classList.add('hidden');
                 this.elements.inputArea.classList.remove('hidden');
-                setTimeout(() => {
-                    this.elements.userInput.focus();
-                }, 50);
+                setTimeout(() => { this.elements.userInput.focus(); }, 100);
             },
 
             check() {
                 const val = this.elements.userInput.value.trim();
-                
                 if (val === "") {
-                    const errorText = "The field cannot be empty. Please enter a sequence of numbers.";
-                    this.elements.errorMsg.innerText = errorText;
+                    this.elements.errorMsg.innerText = "The field cannot be empty.";
                     this.elements.errorMsg.classList.remove('hidden');
                     this.elements.userInput.focus();
                     return;
                 }
 
-                const isCorrect = (val === this.state.sequence) || (val === "001");
+                this.elements.userInput.blur();
 
-                if (isCorrect) {
-                    const finishedLevel = this.state.level;
+                if (val === this.state.sequence || val === "001") {
+                    const finished = this.state.level;
                     this.state.score += 10;
                     this.state.level++;
                     this.handleHighScore();
                     this.updateScoreUI();
-                    this.showResult(true, finishedLevel);
+                    this.showResult(true, finished);
                 } else {
                     this.showResult(false);
                 }
@@ -345,29 +485,34 @@
                 this.elements.sequenceReveal.innerText = this.state.sequence;
                 
                 if (success) {
-                    const successText = this.getSuccessAnnouncement(finishedLevel);
-                    this.elements.resultHeader.innerText = "Correct!";
-                    this.elements.resultMsg.innerText = `Level complete. Your score is ${this.state.score}.`;
-                    this.elements.resultIcon.className = "mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-green-500 pulse-success";
-                    this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>`;
-                    this.elements.nextBtn.innerText = "Next Level";
+                    const text = this.getSuccessAnnouncement(finishedLevel);
                     
-                    this.speak(successText, () => {
-                        this.elements.nextBtn.focus();
-                    });
+                    if (finishedLevel === 25) {
+                        this.state.gameFinished = true;
+                        this.elements.resultHeader.innerText = "You have Ascended!";
+                        this.elements.resultMsg.innerText = `Congratulations! You have ascended to heaven. Final Score: ${this.state.score}.`;
+                        this.elements.resultIcon.className = "mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-yellow-500 pulse-heaven shadow-[0_0_30px_rgba(234,179,8,0.6)]";
+                        this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 3L1 9l11 6 11-6-11-6zM1 15l11 6 11-6M1 11l11 6 11-6" /></svg>`;
+                        this.elements.nextBtn.innerText = "Play Again";
+                    } else {
+                        this.elements.resultHeader.innerText = "Correct!";
+                        this.elements.resultMsg.innerText = `Level complete. Score: ${this.state.score}.`;
+                        this.elements.resultIcon.className = "mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-green-500 pulse-success";
+                        this.elements.resultIcon.innerHTML = `<svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>`;
+                        this.elements.nextBtn.innerText = "Next Level";
+                    }
+
+                    this.speak(text, () => { this.elements.nextBtn.focus(); });
                 } else {
-                    const snarkMessage = this.getGameOverSnark(this.state.level);
-                    
+                    const snark = this.getGameOverSnark(this.state.level);
                     this.elements.resultHeader.innerText = "Game Over";
-                    this.elements.resultMsg.innerText = snarkMessage;
-                    this.elements.resultIcon.className = "mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-red-500";
+                    this.elements.resultMsg.innerText = snark;
+                    this.elements.resultIcon.className = "mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-red-500";
                     this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>`;
                     this.elements.nextBtn.innerText = "Play Again";
-                    
-                    this.speak(`${snarkMessage} The sequence was ${this.state.sequence.split('').join(', ')}`, () => {
+                    this.speak(`${snark} The sequence was ${this.state.sequence.split('').join(', ')}`, () => {
                         this.elements.nextBtn.focus();
                     });
-                    
                     this.state.score = 0;
                     this.state.level = 1;
                     this.updateScoreUI();
@@ -375,16 +520,14 @@
             },
 
             handleAction() {
-                if (this.state.lastResultWasSuccess) {
-                    this.nextRound();
-                } else {
+                if (this.state.gameFinished || !this.state.lastResultWasSuccess) {
                     this.start();
+                } else {
+                    this.nextRound();
                 }
             },
 
-            reset() {
-                this.showScreen('start', 'start-screen');
-            }
+            reset() { this.showScreen('start', 'start-screen'); }
         };
 
         window.onload = () => Game.init();
