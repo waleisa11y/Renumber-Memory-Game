@@ -69,19 +69,24 @@
             transition: max-height 0.3s ease-out, opacity 0.2s ease-in;
             overflow: hidden;
         }
+        
+        :focus-visible {
+            outline: 3px solid #3b82f6;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center p-4">
 
-    <!-- Screen Reader Announcer - Uses role="alert" for better JAWS support -->
+    <!-- Screen Reader Announcer -->
     <div id="sr-announcer" class="sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
     <div id="game-container" class="glass-card w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-6 relative border border-white">
         
         <!-- Persistent Header -->
-        <div class="space-y-4">
+        <header class="space-y-4">
             <div class="flex justify-between items-center">
-                <div class="flex flex-col text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                <div class="flex flex-col text-sm font-semibold text-slate-500 uppercase tracking-wider" aria-label="Game stats">
                     <span>Score: <span id="display-score" class="text-blue-600 font-bold">0</span></span>
                     <span class="text-[10px]">Best: <span id="display-high-score">0</span></span>
                 </div>
@@ -91,7 +96,7 @@
                         id="audio-toggle-btn" 
                         onclick="Game.toggleAnnouncements()" 
                         aria-pressed="false"
-                        class="toggle-btn p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-all border border-transparent focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                        class="toggle-btn p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-all border border-transparent focus:outline-none"
                         title="Toggle Announcements">
                         <svg id="icon-audio-on" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
@@ -100,6 +105,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                         </svg>
+                        <span class="sr-only">Toggle Audio Announcements</span>
                     </button>
 
                     <button 
@@ -107,21 +113,22 @@
                         onclick="Game.toggleSettings()" 
                         aria-expanded="false" 
                         aria-controls="settings-accordion"
-                        class="p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-all text-slate-600 focus:ring-2 focus:ring-blue-400 focus:outline-none disabled:opacity-20 border border-transparent"
+                        class="p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-all text-slate-600 focus:outline-none disabled:opacity-20 border border-transparent"
                         title="Speech Speed">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
+                        <span class="sr-only">Speech Speed Settings</span>
                     </button>
                 </div>
             </div>
 
             <div id="level-status" class="flex justify-between items-center bg-slate-50/50 p-2 rounded-xl">
-                <div id="level-indicator" class="bg-white px-3 py-1 rounded-lg text-blue-600 font-extrabold text-xs shadow-sm">Level 1</div>
+                <div id="level-indicator" tabindex="-1" class="bg-white px-3 py-1 rounded-lg text-blue-600 font-extrabold text-xs shadow-sm focus:outline-none">Level 1</div>
                 <div id="difficulty-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Tutorial (3 digits)</div>
             </div>
-        </div>
+        </header>
 
         <!-- Settings Content -->
         <div id="settings-accordion" class="max-h-0 opacity-0 bg-slate-100 rounded-2xl border border-slate-200 hidden" role="region" aria-label="Speech Speed Settings">
@@ -140,13 +147,13 @@
         </div>
 
         <!-- Start Screen -->
-        <div id="start-screen" class="text-center space-y-6">
-            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl">
+        <main id="start-screen" class="text-center space-y-6 outline-none" role="region" aria-labelledby="start-title" tabindex="-1">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
             </div>
-            <h1 class="text-4xl font-extrabold text-slate-800" tabindex="-1">Renumber</h1>
+            <h1 id="start-title" class="text-4xl font-extrabold text-slate-800">Renumber</h1>
             
             <div class="text-slate-600 text-sm leading-relaxed text-left space-y-4 px-2">
                 <p class="font-semibold text-center text-base">Welcome to remember the number or Renumber. Here’s how to play:</p>
@@ -161,10 +168,10 @@
             <button onclick="Game.start()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-all">
                 Start Game
             </button>
-        </div>
+        </main>
 
         <!-- Game Screen -->
-        <div id="game-screen" class="hidden space-y-6" onclick="Game.handleBackgroundTap(event)">
+        <div id="game-screen" class="hidden space-y-6 outline-none" tabindex="-1" onclick="Game.handleBackgroundTap(event)">
             <div id="memorize-area" class="py-8 text-center">
                 <div id="number-display" class="text-5xl font-black text-slate-800 tracking-widest min-h-[4rem] transition-opacity duration-300" aria-hidden="true"></div>
             </div>
@@ -173,6 +180,7 @@
                 <div class="relative">
                     <label for="user-input" class="block text-center text-slate-600 font-semibold mb-2">Type the sequence:</label>
                     <input type="text" id="user-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
+                           placeholder="Digits..."
                            class="w-full text-center py-5 text-3xl font-bold border-4 border-slate-100 rounded-2xl focus:border-blue-400 focus:outline-none transition-colors">
                     <p id="error-message" class="hidden text-red-500 text-sm font-semibold mt-4 text-center animate-shake" role="alert"></p>
                 </div>
@@ -183,8 +191,8 @@
         </div>
 
         <!-- Result Screen -->
-        <div id="result-screen" class="hidden text-center space-y-6">
-            <div id="result-icon" class="mx-auto w-12 h-12 rounded-full flex items-center justify-center"></div>
+        <section id="result-screen" class="hidden text-center space-y-6 outline-none" role="region" aria-labelledby="result-header" tabindex="-1">
+            <div id="result-icon" class="mx-auto w-12 h-12 rounded-full flex items-center justify-center" aria-hidden="true"></div>
             <h2 id="result-header" class="text-2xl font-extrabold text-slate-800" tabindex="-1">Result</h2>
             <p id="result-message" class="text-slate-600 mt-2 font-medium"></p>
             <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -199,7 +207,7 @@
                     Menu
                 </button>
             </div>
-        </div>
+        </section>
     </div>
 
     <script>
@@ -272,7 +280,6 @@
                 if (this.state.announcementsEnabled) this.speak("Announcements turned on.");
                 else { 
                     this.clearAnnouncer(); 
-                    // Using speak to update sr-announcer properly
                     this.speak("Announcements turned off."); 
                 }
             },
@@ -362,7 +369,7 @@
                     if (finishedLevel === 25) return milestones[finishedLevel];
                     return `${milestones[finishedLevel]} Score: ${score}. Next level is ${nextDiff.label} with ${nextDiff.digits} digits.`;
                 }
-                return `Correct, your score is ${score}. Tap next to proceed`;
+                return `Your score is ${score}. Tap next to proceed`;
             },
 
             clearAnnouncer() { 
@@ -370,17 +377,23 @@
             },
 
             showScreen(key, focusId) {
-                this.clearAnnouncer();
-                Object.keys(this.elements.screens).forEach(k => this.elements.screens[k].classList.toggle('hidden', k !== key));
-                if (focusId) { const el = document.getElementById(focusId); if (el) el.focus(); }
+                Object.keys(this.elements.screens).forEach(k => {
+                    this.elements.screens[k].classList.toggle('hidden', k !== key);
+                });
+
+                const targetId = focusId || `${key}-screen`;
+                const el = document.getElementById(targetId);
+                
+                if (el) {
+                    setTimeout(() => {
+                        el.focus();
+                    }, 50);
+                }
+
                 if (this.state.isSettingsOpen) this.toggleSettings(true);
             },
 
-            /**
-             * Enhanced speak function for JAWS compatibility.
-             * Uses SpeechSynthesis if enabled, otherwise robustly updates a persistent ARIA live region.
-             */
-            speak(text, onComplete = null) {
+            speak(text, onComplete = null, delay = 50) {
                 if (this.state.announcementsEnabled) {
                     this.state.synth.cancel();
                     const utterance = new SpeechSynthesisUtterance(text);
@@ -388,17 +401,11 @@
                     utterance.onend = () => { if (onComplete) onComplete(); };
                     this.state.synth.speak(utterance);
                 } else {
-                    // JAWS BEST PRACTICE: Clear then set content with a tiny delay to force an update event
                     this.elements.srAnnouncer.textContent = "";
                     setTimeout(() => {
                         this.elements.srAnnouncer.textContent = text;
-                        // For non-audio announcements, we trigger the callback immediately 
-                        // unless it's the specific sequence display handled in nextRound.
-                        if (onComplete) {
-                            // If this is a long text, we might want a small delay, otherwise trigger.
-                            setTimeout(onComplete, 100);
-                        }
-                    }, 50);
+                        if (onComplete) setTimeout(onComplete, 100);
+                    }, delay);
                 }
             },
 
@@ -411,8 +418,9 @@
             },
 
             nextRound() {
-                this.clearAnnouncer();
-                this.showScreen('game');
+                // Focus the level indicator first.
+                this.showScreen('game', 'level-indicator'); 
+                
                 this.elements.inputArea.classList.add('hidden');
                 this.elements.memorizeArea.classList.remove('hidden');
                 this.elements.errorMsg.classList.add('hidden');
@@ -430,30 +438,30 @@
                 const completePhase = () => { this.hideNumbers(); this.switchToInput(); };
 
                 const startDisplay = () => {
+                    let leadText = "";
+                    // Only use leadText (Level, Difficulty, Instructions) if announcements are ON.
+                    if (this.state.level === 1 && this.state.announcementsEnabled) {
+                        leadText = "Level 1: tutorial. Memorize and recall this 3-digit sequence. ";
+                    }
+                    
                     if (this.state.announcementsEnabled) {
                         this.elements.numberDisplay.innerText = this.state.sequence;
                         this.elements.numberDisplay.setAttribute('aria-hidden', 'true');
-                        this.speak("The numbers are: " + formattedSeq, completePhase);
+                        this.speak(leadText + "The numbers are: " + formattedSeq, completePhase);
                     } else {
-                        // JAWS FIX: Send formatted sequence to sr-announcer instead of dynamic live region on display
                         this.elements.numberDisplay.innerText = formattedSeq;
                         this.elements.numberDisplay.setAttribute('aria-hidden', 'false');
-                        
-                        // Speak the sequence through the robust announcer
+                        // Request: When announcements are turned OFF, leadText is removed for level 1.
+                        // The level is already indicated by the focus on the level indicator.
                         this.speak("The numbers are: " + formattedSeq);
                         
-                        // Timing requirement: 0.4 seconds per digit
                         const transitionDelay = this.state.sequence.length * 400;
                         setTimeout(completePhase, transitionDelay);
                     }
                 };
 
-                if (this.state.level === 1) {
-                    this.speak("Level 1: tutorial. Memorize and recall this 3-digit sequence.", startDisplay);
-                } else {
-                    // Slight pause before showing numbers to ensure level announcement is processed
-                    setTimeout(startDisplay, 600);
-                }
+                // Follow a 1000ms delay after the focus lands on the level indicator to avoid speech clobbering.
+                setTimeout(startDisplay, 1000);
             },
 
             hideNumbers() {
@@ -464,7 +472,13 @@
             switchToInput() {
                 this.elements.memorizeArea.classList.add('hidden');
                 this.elements.inputArea.classList.remove('hidden');
-                setTimeout(() => { this.elements.userInput.focus(); }, 150);
+                
+                setTimeout(() => { 
+                    this.elements.userInput.focus(); 
+                    if (!this.state.announcementsEnabled) {
+                        setTimeout(() => this.clearAnnouncer(), 400);
+                    }
+                }, 100);
             },
 
             check() {
@@ -505,12 +519,13 @@
 
             showResult(success, finishedLevel = 0) {
                 this.state.lastResultWasSuccess = success;
-                this.showScreen('result', 'result-header');
-                this.elements.sequenceReveal.innerText = this.state.sequence;
                 
                 if (success) {
-                    const text = this.getSuccessAnnouncement(finishedLevel);
-                    
+                    this.elements.resultHeader.innerText = "Correct!";
+                    this.elements.resultIcon.className = "mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-green-500 pulse-success";
+                    this.elements.resultIcon.innerHTML = `<svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>`;
+                    this.elements.nextBtn.innerText = "Next Level";
+
                     if (finishedLevel === 25) {
                         this.state.gameFinished = true;
                         this.elements.resultHeader.innerText = "You have Ascended!";
@@ -519,14 +534,21 @@
                         this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 3L1 9l11 6 11-6-11-6zM1 15l11 6 11-6M1 11l11 6 11-6" /></svg>`;
                         this.elements.nextBtn.innerText = "Play Again";
                     } else {
-                        this.elements.resultHeader.innerText = "Correct!";
                         this.elements.resultMsg.innerText = `Level complete. Score: ${this.state.score}.`;
-                        this.elements.resultIcon.className = "mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-green-500 pulse-success";
-                        this.elements.resultIcon.innerHTML = `<svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>`;
-                        this.elements.nextBtn.innerText = "Next Level";
                     }
 
-                    this.speak(text, () => { this.elements.nextBtn.focus(); });
+                    if (!this.state.announcementsEnabled) {
+                        this.showScreen('result', 'next-round-btn');
+                        this.elements.sequenceReveal.innerText = this.state.sequence;
+                        const text = "Correct. " + this.getSuccessAnnouncement(finishedLevel);
+                        this.speak(text, null, 400);
+                    } else {
+                        this.showScreen('result', 'result-header');
+                        this.elements.sequenceReveal.innerText = this.state.sequence;
+                        const text = "Correct. " + this.getSuccessAnnouncement(finishedLevel);
+                        this.speak(text, () => { this.elements.nextBtn.focus(); }, 300);
+                    }
+
                 } else {
                     const snark = this.getGameOverSnark(this.state.level);
                     this.elements.resultHeader.innerText = "Game Over";
@@ -535,10 +557,20 @@
                     this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>`;
                     this.elements.nextBtn.innerText = "Play Again";
                     
-                    const gameOverMessage = `${snark} The sequence was ${this.state.sequence.split('').join(', ')}`;
-                    this.speak(gameOverMessage, () => {
-                        this.elements.nextBtn.focus();
-                    });
+                    if (!this.state.announcementsEnabled) {
+                        this.showScreen('result', 'next-round-btn');
+                        this.elements.sequenceReveal.innerText = this.state.sequence;
+                        const gameOverMessage = `Incorrect. ${snark} The sequence was ${this.state.sequence.split('').join(', ')}`;
+                        this.speak(gameOverMessage, null, 400);
+                    } else {
+                        this.showScreen('result', 'result-header');
+                        this.elements.sequenceReveal.innerText = this.state.sequence;
+                        const gameOverMessage = `Incorrect. ${snark} The sequence was ${this.state.sequence.split('').join(', ')}`;
+                        this.speak(gameOverMessage, () => {
+                            this.elements.nextBtn.focus();
+                        }, 300);
+                    }
+
                     this.state.score = 0;
                     this.state.level = 1;
                     this.updateScoreUI();
