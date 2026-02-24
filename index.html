@@ -73,8 +73,8 @@
 </head>
 <body class="flex items-center justify-center p-4">
 
-    <!-- Screen Reader Announcer -->
-    <div id="sr-announcer" class="sr-only" aria-live="assertive"></div>
+    <!-- Screen Reader Announcer - Uses role="alert" for better JAWS support -->
+    <div id="sr-announcer" class="sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
     <div id="game-container" class="glass-card w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-6 relative border border-white">
         
@@ -173,7 +173,6 @@
                 <div class="relative">
                     <label for="user-input" class="block text-center text-slate-600 font-semibold mb-2">Type the sequence:</label>
                     <input type="text" id="user-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
-                           placeholder="Digits..."
                            class="w-full text-center py-5 text-3xl font-bold border-4 border-slate-100 rounded-2xl focus:border-blue-400 focus:outline-none transition-colors">
                     <p id="error-message" class="hidden text-red-500 text-sm font-semibold mt-4 text-center animate-shake" role="alert"></p>
                 </div>
@@ -271,7 +270,11 @@
                 if (!this.state.announcementsEnabled && this.state.isSettingsOpen) this.toggleSettings(true);
                 this.updateAudioUI();
                 if (this.state.announcementsEnabled) this.speak("Announcements turned on.");
-                else { this.clearAnnouncer(); this.elements.srAnnouncer.innerText = "Announcements turned off."; }
+                else { 
+                    this.clearAnnouncer(); 
+                    // Using speak to update sr-announcer properly
+                    this.speak("Announcements turned off."); 
+                }
             },
 
             updateAudioUI() {
@@ -362,7 +365,9 @@
                 return `Correct, your score is ${score}. Tap next to proceed`;
             },
 
-            clearAnnouncer() { this.elements.srAnnouncer.innerText = ""; },
+            clearAnnouncer() { 
+                this.elements.srAnnouncer.textContent = ""; 
+            },
 
             showScreen(key, focusId) {
                 this.clearAnnouncer();
@@ -371,6 +376,10 @@
                 if (this.state.isSettingsOpen) this.toggleSettings(true);
             },
 
+            /**
+             * Enhanced speak function for JAWS compatibility.
+             * Uses SpeechSynthesis if enabled, otherwise robustly updates a persistent ARIA live region.
+             */
             speak(text, onComplete = null) {
                 if (this.state.announcementsEnabled) {
                     this.state.synth.cancel();
@@ -379,8 +388,17 @@
                     utterance.onend = () => { if (onComplete) onComplete(); };
                     this.state.synth.speak(utterance);
                 } else {
-                    this.elements.srAnnouncer.innerText = text;
-                    if (onComplete) setTimeout(onComplete, 100); 
+                    // JAWS BEST PRACTICE: Clear then set content with a tiny delay to force an update event
+                    this.elements.srAnnouncer.textContent = "";
+                    setTimeout(() => {
+                        this.elements.srAnnouncer.textContent = text;
+                        // For non-audio announcements, we trigger the callback immediately 
+                        // unless it's the specific sequence display handled in nextRound.
+                        if (onComplete) {
+                            // If this is a long text, we might want a small delay, otherwise trigger.
+                            setTimeout(onComplete, 100);
+                        }
+                    }, 50);
                 }
             },
 
@@ -417,12 +435,14 @@
                         this.elements.numberDisplay.setAttribute('aria-hidden', 'true');
                         this.speak("The numbers are: " + formattedSeq, completePhase);
                     } else {
-                        // When announcements are OFF, show digits separated by commas for screen reader clarity
+                        // JAWS FIX: Send formatted sequence to sr-announcer instead of dynamic live region on display
                         this.elements.numberDisplay.innerText = formattedSeq;
                         this.elements.numberDisplay.setAttribute('aria-hidden', 'false');
-                        this.elements.numberDisplay.setAttribute('aria-live', 'assertive');
                         
-                        // User Request: Wait 0.4 seconds per digit before switching to input
+                        // Speak the sequence through the robust announcer
+                        this.speak("The numbers are: " + formattedSeq);
+                        
+                        // Timing requirement: 0.4 seconds per digit
                         const transitionDelay = this.state.sequence.length * 400;
                         setTimeout(completePhase, transitionDelay);
                     }
@@ -431,20 +451,20 @@
                 if (this.state.level === 1) {
                     this.speak("Level 1: tutorial. Memorize and recall this 3-digit sequence.", startDisplay);
                 } else {
-                    setTimeout(startDisplay, 400);
+                    // Slight pause before showing numbers to ensure level announcement is processed
+                    setTimeout(startDisplay, 600);
                 }
             },
 
             hideNumbers() {
                 this.elements.numberDisplay.classList.add('opacity-0');
                 this.elements.numberDisplay.setAttribute('aria-hidden', 'true');
-                this.elements.numberDisplay.removeAttribute('aria-live');
             },
 
             switchToInput() {
                 this.elements.memorizeArea.classList.add('hidden');
                 this.elements.inputArea.classList.remove('hidden');
-                setTimeout(() => { this.elements.userInput.focus(); }, 100);
+                setTimeout(() => { this.elements.userInput.focus(); }, 150);
             },
 
             check() {
@@ -452,6 +472,7 @@
                 if (val === "") {
                     this.elements.errorMsg.innerText = "The field cannot be empty.";
                     this.elements.errorMsg.classList.remove('hidden');
+                    this.speak("Error: The field cannot be empty.");
                     this.elements.userInput.focus();
                     return;
                 }
@@ -513,7 +534,9 @@
                     this.elements.resultIcon.className = "mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-red-500";
                     this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>`;
                     this.elements.nextBtn.innerText = "Play Again";
-                    this.speak(`${snark} The sequence was ${this.state.sequence.split('').join(', ')}`, () => {
+                    
+                    const gameOverMessage = `${snark} The sequence was ${this.state.sequence.split('').join(', ')}`;
+                    this.speak(gameOverMessage, () => {
                         this.elements.nextBtn.focus();
                     });
                     this.state.score = 0;
