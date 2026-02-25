@@ -180,7 +180,6 @@
                 <div class="relative">
                     <label for="user-input" class="block text-center text-slate-600 font-semibold mb-2">Type the sequence:</label>
                     <input type="text" id="user-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
-                           placeholder="Digits..."
                            class="w-full text-center py-5 text-3xl font-bold border-4 border-slate-100 rounded-2xl focus:border-blue-400 focus:outline-none transition-colors">
                     <p id="error-message" class="hidden text-red-500 text-sm font-semibold mt-4 text-center animate-shake" role="alert"></p>
                 </div>
@@ -418,16 +417,16 @@
             },
 
             nextRound() {
-                // Focus the level indicator first.
-                this.showScreen('game', 'level-indicator'); 
-                
-                this.elements.inputArea.classList.add('hidden');
-                this.elements.memorizeArea.classList.remove('hidden');
-                this.elements.errorMsg.classList.add('hidden');
-                
                 const diffInfo = this.getDifficultyInfo(this.state.level);
                 this.elements.levelIndicator.innerText = `Level ${this.state.level}`;
                 this.elements.difficultyText.innerText = `${diffInfo.label} (${diffInfo.digits} digits)`;
+                
+                // Focus the edit field BEFORE announcements happen.
+                this.showScreen('game', 'user-input');
+                this.elements.inputArea.classList.remove('hidden');
+                this.elements.memorizeArea.classList.remove('hidden');
+
+                this.elements.errorMsg.classList.add('hidden');
                 this.elements.numberDisplay.classList.remove('opacity-0');
                 this.elements.numberDisplay.innerText = "";
                 this.elements.userInput.value = "";
@@ -435,32 +434,36 @@
                 this.state.sequence = Array.from({length: diffInfo.digits}, () => Math.floor(Math.random() * 10)).join('');
                 const formattedSeq = this.state.sequence.split('').join(', ');
 
-                const completePhase = () => { this.hideNumbers(); this.switchToInput(); };
-
                 const startDisplay = () => {
                     let leadText = "";
-                    // Only use leadText (Level, Difficulty, Instructions) if announcements are ON.
+                    const levelAnnouncement = `Level ${this.state.level}. `;
+                    
                     if (this.state.level === 1 && this.state.announcementsEnabled) {
-                        leadText = "Level 1: tutorial. Memorize and recall this 3-digit sequence. ";
+                        leadText = "tutorial. Memorize and recall this 3-digit sequence. ";
                     }
                     
                     if (this.state.announcementsEnabled) {
                         this.elements.numberDisplay.innerText = this.state.sequence;
                         this.elements.numberDisplay.setAttribute('aria-hidden', 'true');
-                        this.speak(leadText + "The numbers are: " + formattedSeq, completePhase);
+                        this.speak(levelAnnouncement + leadText + "The numbers are: " + formattedSeq, () => {
+                            this.hideNumbers();
+                            this.elements.memorizeArea.classList.add('hidden');
+                        });
                     } else {
                         this.elements.numberDisplay.innerText = formattedSeq;
                         this.elements.numberDisplay.setAttribute('aria-hidden', 'false');
-                        // Request: When announcements are turned OFF, leadText is removed for level 1.
-                        // The level is already indicated by the focus on the level indicator.
-                        this.speak("The numbers are: " + formattedSeq);
+                        this.speak(levelAnnouncement + `The numbers are: ${formattedSeq}`);
                         
                         const transitionDelay = this.state.sequence.length * 400;
-                        setTimeout(completePhase, transitionDelay);
+                        setTimeout(() => {
+                            this.hideNumbers();
+                            this.elements.memorizeArea.classList.add('hidden');
+                            this.clearAnnouncer();
+                        }, transitionDelay);
                     }
                 };
 
-                // Follow a 1000ms delay after the focus lands on the level indicator to avoid speech clobbering.
+                // Updated delay: 1000ms (1 second) between focus shift and sequence announcement start.
                 setTimeout(startDisplay, 1000);
             },
 
@@ -472,13 +475,7 @@
             switchToInput() {
                 this.elements.memorizeArea.classList.add('hidden');
                 this.elements.inputArea.classList.remove('hidden');
-                
-                setTimeout(() => { 
-                    this.elements.userInput.focus(); 
-                    if (!this.state.announcementsEnabled) {
-                        setTimeout(() => this.clearAnnouncer(), 400);
-                    }
-                }, 100);
+                this.elements.userInput.focus();
             },
 
             check() {
@@ -536,19 +533,6 @@
                     } else {
                         this.elements.resultMsg.innerText = `Level complete. Score: ${this.state.score}.`;
                     }
-
-                    if (!this.state.announcementsEnabled) {
-                        this.showScreen('result', 'next-round-btn');
-                        this.elements.sequenceReveal.innerText = this.state.sequence;
-                        const text = "Correct. " + this.getSuccessAnnouncement(finishedLevel);
-                        this.speak(text, null, 400);
-                    } else {
-                        this.showScreen('result', 'result-header');
-                        this.elements.sequenceReveal.innerText = this.state.sequence;
-                        const text = "Correct. " + this.getSuccessAnnouncement(finishedLevel);
-                        this.speak(text, () => { this.elements.nextBtn.focus(); }, 300);
-                    }
-
                 } else {
                     const snark = this.getGameOverSnark(this.state.level);
                     this.elements.resultHeader.innerText = "Game Over";
@@ -556,21 +540,30 @@
                     this.elements.resultIcon.className = "mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-red-500";
                     this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>`;
                     this.elements.nextBtn.innerText = "Play Again";
-                    
-                    if (!this.state.announcementsEnabled) {
-                        this.showScreen('result', 'next-round-btn');
-                        this.elements.sequenceReveal.innerText = this.state.sequence;
-                        const gameOverMessage = `Incorrect. ${snark} The sequence was ${this.state.sequence.split('').join(', ')}`;
-                        this.speak(gameOverMessage, null, 400);
-                    } else {
-                        this.showScreen('result', 'result-header');
-                        this.elements.sequenceReveal.innerText = this.state.sequence;
-                        const gameOverMessage = `Incorrect. ${snark} The sequence was ${this.state.sequence.split('').join(', ')}`;
-                        this.speak(gameOverMessage, () => {
-                            this.elements.nextBtn.focus();
-                        }, 300);
-                    }
+                }
 
+                this.elements.sequenceReveal.innerText = this.state.sequence;
+
+                // Announcements On: move focus to button BEFORE announcement with 500ms delay.
+                if (this.state.announcementsEnabled) {
+                    this.showScreen('result', 'next-round-btn'); // Sets focus to button
+                    
+                    const text = success ? 
+                        ("Correct. " + this.getSuccessAnnouncement(finishedLevel)) :
+                        (`Incorrect. ${this.getGameOverSnark(this.state.level)} The sequence was ${this.state.sequence.split('').join(', ')}`);
+                    
+                    setTimeout(() => {
+                        this.speak(text);
+                    }, 500); 
+                } else {
+                    this.showScreen('result', 'next-round-btn');
+                    const text = success ? 
+                        ("Correct. " + this.getSuccessAnnouncement(finishedLevel)) :
+                        (`Incorrect. ${this.getGameOverSnark(this.state.level)} The sequence was ${this.state.sequence.split('').join(', ')}`);
+                    this.speak(text, null, 400);
+                }
+
+                if (!success) {
                     this.state.score = 0;
                     this.state.level = 1;
                     this.updateScoreUI();
