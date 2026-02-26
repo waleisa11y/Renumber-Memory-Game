@@ -52,7 +52,7 @@
         }
         .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
 
-        .rate-btn[aria-pressed="true"] {
+        .rate-btn[aria-pressed="true"], .timer-btn[aria-pressed="true"] {
             background-color: #2563eb;
             color: white;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
@@ -65,7 +65,7 @@
             border-color: #bfdbfe;
         }
 
-        #settings-accordion {
+        .accordion-content {
             transition: max-height 0.3s ease-out, opacity 0.2s ease-in;
             overflow: hidden;
         }
@@ -73,6 +73,19 @@
         :focus-visible {
             outline: 3px solid #3b82f6;
             outline-offset: 2px;
+        }
+
+        #timer-bar-container {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        #timer-bar {
+            height: 100%;
+            background: #ef4444;
+            width: 100%;
+            transition: width 0.1s linear;
         }
     </style>
 </head>
@@ -92,6 +105,24 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
+                    <!-- Sound Effects Toggle Button -->
+                    <button 
+                        id="sound-toggle-btn" 
+                        onclick="Game.toggleSounds()" 
+                        aria-pressed="false"
+                        class="toggle-btn p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-all border border-transparent focus:outline-none"
+                        title="Toggle Sound Effects">
+                        <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a9 9 0 010 12.72" />
+                        </svg>
+                        <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9l-6 6m0-6l6 6" />
+                        </svg>
+                        <span class="sr-only">Toggle Sound Effects</span>
+                    </button>
+
                     <button 
                         id="audio-toggle-btn" 
                         onclick="Game.toggleAnnouncements()" 
@@ -110,9 +141,9 @@
 
                     <button 
                         id="settings-toggle" 
-                        onclick="Game.toggleSettings()" 
+                        onclick="Game.toggleSettings('speech')" 
                         aria-expanded="false" 
-                        aria-controls="settings-accordion"
+                        aria-controls="speech-accordion"
                         class="p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-all text-slate-600 focus:outline-none disabled:opacity-20 border border-transparent"
                         title="Speech Speed">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,8 +161,8 @@
             </div>
         </header>
 
-        <!-- Settings Content -->
-        <div id="settings-accordion" class="max-h-0 opacity-0 bg-slate-100 rounded-2xl border border-slate-200 hidden" role="region" aria-label="Speech Speed Settings">
+        <!-- Speech Settings Accordion -->
+        <div id="speech-accordion" class="accordion-content max-h-0 opacity-0 bg-slate-100 rounded-2xl border border-slate-200 hidden" role="region" aria-label="Speech Speed Settings">
             <div class="p-4 space-y-4">
                 <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Speech Rate</h2>
                 <div class="grid grid-cols-2 gap-2 bg-slate-200 p-1.5 rounded-xl">
@@ -162,7 +193,31 @@
                     <li><span class="font-bold text-blue-600">• Recall:</span> Type the numbers back in the correct order.</li>
                     <li><span class="font-bold text-blue-600">• Level Up:</span> If you get it right, you move to the next level.</li>
                 </ul>
-                <p class="pt-2 text-center">As you go, the game gets harder by adding more digits to the sequence. Good luck!</p>
+            </div>
+
+            <!-- Time Limit Accordion -->
+            <div class="space-y-2">
+                <button 
+                    id="timer-settings-toggle"
+                    onclick="Game.toggleSettings('timer')"
+                    aria-expanded="false"
+                    aria-controls="timer-accordion"
+                    class="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 text-sm transition-all border border-slate-200 flex justify-between items-center px-4">
+                    <span>Add Time Limit</span>
+                    <svg id="timer-toggle-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="timer-accordion" class="accordion-content max-h-0 opacity-0 bg-slate-50 rounded-2xl border border-slate-100 hidden" role="region" aria-label="Time Limit Settings">
+                    <div class="p-3 space-y-3">
+                        <div class="grid grid-cols-1 gap-2 bg-slate-200 p-1 rounded-xl">
+                            <button type="button" class="timer-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-limit="0" onclick="Game.updateTimerMode(0)">No time limit</button>
+                            <button type="button" class="timer-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-limit="4" onclick="Game.updateTimerMode(4)">Easy (4s per digit)</button>
+                            <button type="button" class="timer-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-limit="3" onclick="Game.updateTimerMode(3)">Medium (3s per digit)</button>
+                            <button type="button" class="timer-btn py-2 text-[11px] font-bold text-slate-600 bg-white/50 rounded-lg transition-all" data-limit="2" onclick="Game.updateTimerMode(2)">Difficult (2s per digit)</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <button onclick="Game.start()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-all">
@@ -172,6 +227,11 @@
 
         <!-- Game Screen -->
         <div id="game-screen" class="hidden space-y-6 outline-none" tabindex="-1" onclick="Game.handleBackgroundTap(event)">
+            <!-- Visual Timer Bar -->
+            <div id="timer-bar-container" class="hidden">
+                <div id="timer-bar"></div>
+            </div>
+
             <div id="memorize-area" class="py-8 text-center">
                 <div id="number-display" class="text-5xl font-black text-slate-800 tracking-widest min-h-[4rem] transition-opacity duration-300" aria-hidden="true"></div>
             </div>
@@ -216,12 +276,18 @@
                 highScore: parseInt(localStorage.getItem('renumber-high-score')) || 0,
                 speechRate: parseFloat(localStorage.getItem('renumber-speech-rate')) || 1.0,
                 announcementsEnabled: localStorage.getItem('renumber-audio-enabled') === 'true',
+                soundsEnabled: localStorage.getItem('renumber-sounds-enabled') === 'true',
+                timerMode: parseFloat(localStorage.getItem('renumber-timer-mode')) || 0,
                 sequence: "",
                 level: 1,
-                isSettingsOpen: false,
+                isSettingsOpen: { speech: false, timer: false },
                 lastResultWasSuccess: true,
                 gameFinished: false,
-                synth: window.speechSynthesis
+                synth: window.speechSynthesis,
+                timerRef: null,
+                timerValue: 0,
+                roundActive: false,
+                audioCtx: null
             },
 
             elements: {
@@ -246,21 +312,88 @@
                 playAgainBtn: document.getElementById('play-again-btn'),
                 submitBtn: document.getElementById('submit-answer'),
                 errorMsg: document.getElementById('error-message'),
-                accordion: document.getElementById('settings-accordion'),
-                settingsToggle: document.getElementById('settings-toggle'),
                 audioToggleBtn: document.getElementById('audio-toggle-btn'),
                 iconAudioOn: document.getElementById('icon-audio-on'),
                 iconAudioOff: document.getElementById('icon-audio-off'),
-                srAnnouncer: document.getElementById('sr-announcer')
+                soundToggleBtn: document.getElementById('sound-toggle-btn'),
+                iconSoundOn: document.getElementById('icon-sound-on'),
+                iconSoundOff: document.getElementById('icon-sound-off'),
+                srAnnouncer: document.getElementById('sr-announcer'),
+                timerBarContainer: document.getElementById('timer-bar-container'),
+                timerBar: document.getElementById('timer-bar'),
+                accordions: {
+                    speech: document.getElementById('speech-accordion'),
+                    timer: document.getElementById('timer-accordion')
+                },
+                toggles: {
+                    speech: document.getElementById('settings-toggle'),
+                    timer: document.getElementById('timer-settings-toggle')
+                }
             },
 
             init() {
                 this.elements.highScore.innerText = this.state.highScore;
                 this.updateRateUI();
                 this.updateAudioUI();
+                this.updateSoundUI();
+                this.updateTimerUI();
 
                 this.elements.userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.check(); });
                 this.elements.userInput.addEventListener('input', () => { this.elements.errorMsg.classList.add('hidden'); });
+            },
+
+            getAudioCtx() {
+                if (!this.state.audioCtx) {
+                    this.state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                return this.state.audioCtx;
+            },
+
+            playSound(type) {
+                if (!this.state.soundsEnabled) return;
+                const ctx = this.getAudioCtx();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                const now = ctx.currentTime;
+                
+                if (type === 'victory') {
+                    // Short arpeggio ending high (C5 -> E5 -> G5 -> C6)
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, i) => {
+                        this.playNote(ctx, freq, now + (i * 0.06), 0.1);
+                    });
+                } else if (type === 'powerup') {
+                    // LONG arpeggio that ascends and then descends
+                    const ascending = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+                    const descending = [783.99, 659.25, 523.25, 392.00, 329.63, 261.63];
+                    const notes = [...ascending, ...descending];
+                    notes.forEach((freq, i) => {
+                        this.playNote(ctx, freq, now + (i * 0.07), 0.12);
+                    });
+                } else if (type === 'incorrect') {
+                    // Descending Triton sound (Med -> Low)
+                    this.playNote(ctx, 369.99, now, 0.2, 'sawtooth'); // F#4
+                    this.playNote(ctx, 261.63, now + 0.2, 0.5, 'sawtooth'); // C4
+                } else if (type === 'timeout') {
+                    // Descending arpeggio (High -> Low)
+                    const notes = [1046.50, 783.99, 659.25, 523.25, 392.00, 329.63, 261.63];
+                    notes.forEach((freq, i) => {
+                        this.playNote(ctx, freq, now + (i * 0.08), 0.15, 'square');
+                    });
+                }
+            },
+
+            playNote(ctx, freq, start, duration, type = 'sine') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0.15, start);
+                gain.gain.exponentialRampToValueAtTime(0.01, start + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + duration);
             },
 
             handleBackgroundTap(e) {
@@ -271,10 +404,27 @@
                 }
             },
 
+            toggleSounds() {
+                this.state.soundsEnabled = !this.state.soundsEnabled;
+                localStorage.setItem('renumber-sounds-enabled', this.state.soundsEnabled);
+                this.updateSoundUI();
+                if (this.state.soundsEnabled) {
+                    this.getAudioCtx();
+                    this.playSound('victory'); 
+                }
+            },
+
+            updateSoundUI() {
+                const en = this.state.soundsEnabled;
+                this.elements.soundToggleBtn.setAttribute('aria-pressed', en);
+                this.elements.iconSoundOn.classList.toggle('hidden', !en);
+                this.elements.iconSoundOff.classList.toggle('hidden', en);
+            },
+
             toggleAnnouncements() {
                 this.state.announcementsEnabled = !this.state.announcementsEnabled;
                 localStorage.setItem('renumber-audio-enabled', this.state.announcementsEnabled);
-                if (!this.state.announcementsEnabled && this.state.isSettingsOpen) this.toggleSettings(true);
+                if (!this.state.announcementsEnabled && this.state.isSettingsOpen.speech) this.toggleSettings('speech', true);
                 this.updateAudioUI();
                 if (this.state.announcementsEnabled) this.speak("Announcements turned on.");
                 else { 
@@ -288,32 +438,37 @@
                 this.elements.audioToggleBtn.setAttribute('aria-pressed', en);
                 this.elements.iconAudioOn.classList.toggle('hidden', !en);
                 this.elements.iconAudioOff.classList.toggle('hidden', en);
-                this.elements.settingsToggle.disabled = !en;
+                this.elements.toggles.speech.disabled = !en;
             },
 
-            toggleSettings(forceClose = null) {
-                if (forceClose === true) this.state.isSettingsOpen = false;
-                else if (forceClose === false) this.state.isSettingsOpen = true;
-                else this.state.isSettingsOpen = !this.state.isSettingsOpen;
+            toggleSettings(key, forceClose = null) {
+                const isOpen = forceClose === true ? false : (forceClose === false ? true : !this.state.isSettingsOpen[key]);
+                this.state.isSettingsOpen[key] = isOpen;
                 
-                const isOpen = this.state.isSettingsOpen;
-                this.elements.settingsToggle.setAttribute('aria-expanded', isOpen);
+                const accordion = this.elements.accordions[key];
+                const toggle = this.elements.toggles[key];
                 
+                toggle.setAttribute('aria-expanded', isOpen);
+                
+                if(key === 'timer') {
+                    document.getElementById('timer-toggle-chevron').style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+
                 if (isOpen) {
-                    this.elements.accordion.classList.remove('hidden');
+                    accordion.classList.remove('hidden');
                     setTimeout(() => {
-                        this.elements.accordion.style.maxHeight = this.elements.accordion.scrollHeight + "px";
-                        this.elements.accordion.style.opacity = "1";
-                        this.elements.accordion.setAttribute('aria-hidden', 'false');
-                        const active = this.elements.accordion.querySelector('[aria-pressed="true"]');
+                        accordion.style.maxHeight = accordion.scrollHeight + "px";
+                        accordion.style.opacity = "1";
+                        accordion.setAttribute('aria-hidden', 'false');
+                        const active = accordion.querySelector('[aria-pressed="true"]');
                         if (active) active.focus();
                     }, 10);
                 } else {
-                    this.elements.accordion.style.maxHeight = "0";
-                    this.elements.accordion.style.opacity = "0";
-                    this.elements.accordion.setAttribute('aria-hidden', 'true');
-                    setTimeout(() => { if (!this.state.isSettingsOpen) this.elements.accordion.classList.add('hidden'); }, 300);
-                    this.elements.settingsToggle.focus();
+                    accordion.style.maxHeight = "0";
+                    accordion.style.opacity = "0";
+                    accordion.setAttribute('aria-hidden', 'true');
+                    setTimeout(() => { if (!this.state.isSettingsOpen[key]) accordion.classList.add('hidden'); }, 300);
+                    toggle.focus();
                 }
             },
 
@@ -321,12 +476,24 @@
                 this.state.speechRate = val;
                 localStorage.setItem('renumber-speech-rate', val);
                 this.updateRateUI();
-                this.toggleSettings(true);
+                this.toggleSettings('speech', true);
             },
 
             updateRateUI() {
-                const btns = this.elements.accordion.querySelectorAll('.rate-btn');
+                const btns = this.elements.accordions.speech.querySelectorAll('.rate-btn');
                 btns.forEach(b => b.setAttribute('aria-pressed', parseFloat(b.dataset.rate) === this.state.speechRate));
+            },
+
+            updateTimerMode(val) {
+                this.state.timerMode = val;
+                localStorage.setItem('renumber-timer-mode', val);
+                this.updateTimerUI();
+                this.toggleSettings('timer', true);
+            },
+
+            updateTimerUI() {
+                const btns = this.elements.accordions.timer.querySelectorAll('.timer-btn');
+                btns.forEach(b => b.setAttribute('aria-pressed', parseFloat(b.dataset.limit) === this.state.timerMode));
             },
 
             getDifficultyInfo(level) {
@@ -389,7 +556,9 @@
                     }, 50);
                 }
 
-                if (this.state.isSettingsOpen) this.toggleSettings(true);
+                Object.keys(this.state.isSettingsOpen).forEach(k => {
+                    if(this.state.isSettingsOpen[k]) this.toggleSettings(k, true);
+                });
             },
 
             speak(text, onComplete = null, delay = 50) {
@@ -421,23 +590,24 @@
                 this.elements.levelIndicator.innerText = `Level ${this.state.level}`;
                 this.elements.difficultyText.innerText = `${diffInfo.label} (${diffInfo.digits} digits)`;
                 
-                // Focus the edit field BEFORE announcements happen.
                 this.showScreen('game', 'user-input');
                 this.elements.inputArea.classList.remove('hidden');
                 this.elements.memorizeArea.classList.remove('hidden');
+                this.elements.timerBarContainer.classList.add('hidden');
 
                 this.elements.errorMsg.classList.add('hidden');
                 this.elements.numberDisplay.classList.remove('opacity-0');
                 this.elements.numberDisplay.innerText = "";
                 this.elements.userInput.value = "";
                 
+                this.state.roundActive = false;
+
                 this.state.sequence = Array.from({length: diffInfo.digits}, () => Math.floor(Math.random() * 10)).join('');
                 const formattedSeq = this.state.sequence.split('').join(', ');
 
                 const startDisplay = () => {
-                    let leadText = "";
                     const levelAnnouncement = `Level ${this.state.level}. `;
-                    
+                    let leadText = "";
                     if (this.state.level === 1 && this.state.announcementsEnabled) {
                         leadText = "tutorial. Memorize and recall this 3-digit sequence. ";
                     }
@@ -448,6 +618,8 @@
                         this.speak(levelAnnouncement + leadText + "The numbers are: " + formattedSeq, () => {
                             this.hideNumbers();
                             this.elements.memorizeArea.classList.add('hidden');
+                            this.state.roundActive = true;
+                            this.startTimer();
                         });
                     } else {
                         this.elements.numberDisplay.innerText = formattedSeq;
@@ -459,12 +631,52 @@
                             this.hideNumbers();
                             this.elements.memorizeArea.classList.add('hidden');
                             this.clearAnnouncer();
+                            this.state.roundActive = true;
+                            this.startTimer();
                         }, transitionDelay);
                     }
                 };
 
-                // Updated delay: 1000ms (1 second) between focus shift and sequence announcement start.
                 setTimeout(startDisplay, 1000);
+            },
+
+            startTimer() {
+                this.stopTimer();
+                if (this.state.timerMode <= 0) return;
+
+                const diffInfo = this.getDifficultyInfo(this.state.level);
+                const totalTime = this.state.timerMode * diffInfo.digits * 1000;
+                let startTime = Date.now();
+                
+                this.elements.timerBarContainer.classList.remove('hidden');
+                this.elements.timerBar.style.width = '100%';
+
+                this.state.timerRef = setInterval(() => {
+                    if (!this.state.roundActive) {
+                        this.stopTimer();
+                        return;
+                    }
+
+                    const elapsed = Date.now() - startTime;
+                    const remaining = Math.max(0, totalTime - elapsed);
+                    const percent = (remaining / totalTime) * 100;
+
+                    this.elements.timerBar.style.width = `${percent}%`;
+
+                    if (remaining <= 0) {
+                        this.state.roundActive = false;
+                        this.stopTimer();
+                        this.showResult(false, 0, true);
+                    }
+                }, 100);
+            },
+
+            stopTimer() {
+                if (this.state.timerRef) {
+                    clearInterval(this.state.timerRef);
+                    this.state.timerRef = null;
+                }
+                this.elements.timerBarContainer.classList.add('hidden');
             },
 
             hideNumbers() {
@@ -472,13 +684,9 @@
                 this.elements.numberDisplay.setAttribute('aria-hidden', 'true');
             },
 
-            switchToInput() {
-                this.elements.memorizeArea.classList.add('hidden');
-                this.elements.inputArea.classList.remove('hidden');
-                this.elements.userInput.focus();
-            },
-
             check() {
+                if (!this.state.roundActive) return;
+
                 const val = this.elements.userInput.value.trim();
                 if (val === "") {
                     this.elements.errorMsg.innerText = "The field cannot be empty.";
@@ -488,15 +696,22 @@
                     return;
                 }
 
+                this.state.roundActive = false;
+                this.stopTimer();
                 this.elements.userInput.blur();
 
                 if (val === this.state.sequence || val === "001") {
-                    const finished = this.state.level;
+                    const finishedLevel = this.state.level;
                     this.state.score += 10;
                     this.state.level++;
+                    
+                    const oldDiff = this.getDifficultyInfo(finishedLevel).label;
+                    const newDiff = this.getDifficultyInfo(this.state.level).label;
+                    const advancedDifficulty = (oldDiff !== newDiff);
+
                     this.handleHighScore();
                     this.updateScoreUI();
-                    this.showResult(true, finished);
+                    this.showResult(true, finishedLevel, false, advancedDifficulty);
                 } else {
                     this.showResult(false);
                 }
@@ -514,7 +729,7 @@
                 this.elements.highScore.innerText = this.state.highScore;
             },
 
-            showResult(success, finishedLevel = 0) {
+            showResult(success, finishedLevel = 0, isTimeout = false, advancedDifficulty = false) {
                 this.state.lastResultWasSuccess = success;
                 
                 if (success) {
@@ -522,6 +737,9 @@
                     this.elements.resultIcon.className = "mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-green-500 pulse-success";
                     this.elements.resultIcon.innerHTML = `<svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>`;
                     this.elements.nextBtn.innerText = "Next Level";
+
+                    if (advancedDifficulty) this.playSound('powerup');
+                    else this.playSound('victory');
 
                     if (finishedLevel === 25) {
                         this.state.gameFinished = true;
@@ -535,31 +753,31 @@
                     }
                 } else {
                     const snark = this.getGameOverSnark(this.state.level);
-                    this.elements.resultHeader.innerText = "Game Over";
-                    this.elements.resultMsg.innerText = snark;
+                    this.elements.resultHeader.innerText = isTimeout ? "Times out!" : "Game Over";
+                    this.elements.resultMsg.innerText = isTimeout ? "Too slow! Your brain took too long to process." : snark;
                     this.elements.resultIcon.className = "mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-red-500";
                     this.elements.resultIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>`;
                     this.elements.nextBtn.innerText = "Play Again";
+
+                    if (isTimeout) this.playSound('timeout');
+                    else this.playSound('incorrect');
                 }
 
                 this.elements.sequenceReveal.innerText = this.state.sequence;
 
-                // Announcements On: move focus to button BEFORE announcement with 500ms delay.
+                const resultPhrase = isTimeout ? "Times out!" : (success ? "Correct. " : "Incorrect. ");
+
                 if (this.state.announcementsEnabled) {
-                    this.showScreen('result', 'next-round-btn'); // Sets focus to button
-                    
+                    this.showScreen('result', 'next-round-btn');
                     const text = success ? 
-                        ("Correct. " + this.getSuccessAnnouncement(finishedLevel)) :
-                        (`Incorrect. ${this.getGameOverSnark(this.state.level)} The sequence was ${this.state.sequence.split('').join(', ')}`);
-                    
-                    setTimeout(() => {
-                        this.speak(text);
-                    }, 500); 
+                        (resultPhrase + this.getSuccessAnnouncement(finishedLevel)) :
+                        (`${resultPhrase} ${this.elements.resultMsg.innerText} The sequence was ${this.state.sequence.split('').join(', ')}`);
+                    setTimeout(() => { this.speak(text); }, 500); 
                 } else {
                     this.showScreen('result', 'next-round-btn');
                     const text = success ? 
-                        ("Correct. " + this.getSuccessAnnouncement(finishedLevel)) :
-                        (`Incorrect. ${this.getGameOverSnark(this.state.level)} The sequence was ${this.state.sequence.split('').join(', ')}`);
+                        (resultPhrase + this.getSuccessAnnouncement(finishedLevel)) :
+                        (`${resultPhrase} ${this.elements.resultMsg.innerText} The sequence was ${this.state.sequence.split('').join(', ')}`);
                     this.speak(text, null, 400);
                 }
 
